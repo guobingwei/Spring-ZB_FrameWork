@@ -1,21 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
        http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
         http://www.springframework.org/schema/context
-        http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+        http://www.springframework.org/schema/context/spring-context-4.0.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
 
     <context:component-scan base-package="service"/>
     <context:component-scan base-package="dao"/>
 
-    <bean id="dataSource-mysql" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
+    // 数据源
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
         <property name="url" value="jdbc:mysql://120.24.187.147:3306/major" />
         <property name="username" value="major" />
         <property name="password" value="major" />
         <property name="initialSize" value="1" />
         <property name="maxActive" value="20" />
     </bean>
+
+    //
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+
+    <!-- 首先定义抽象的abstractDao，其有一个jdbcTemplate属性，从而可以让继承的子类自动继承jdbcTemplate属性注入； -->
+    <bean id="abstractDao" abstract="true">
+        <property name="jdbcTemplate" ref="jdbcTemplate" />
+    </bean>
+
+    <bean id="userDao" class="dao.UserDaoImpl"
+          parent="abstractDao" />
+
+    <bean id="userService" class="service.UserServiceImpl">
+        <property name="userDao" ref="userDao"></property>
+    </bean>
+
+    <bean id="txManager"
+          class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+
+    <tx:annotation-driven transaction-manager="txManager" />
 
 </beans>
